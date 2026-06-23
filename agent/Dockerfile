@@ -35,11 +35,19 @@ RUN set -eux; \
 
 # ---- build stage ------------------------------------------------------------
 FROM golang:1.25-alpine AS build
+
+# Use a China-accessible Go module proxy by default (proxy.golang.org is often
+# unreachable from CN networks). Override for other regions, e.g.:
+#   docker build --build-arg GOPROXY=https://proxy.golang.org,direct ...
+ARG GOPROXY=https://goproxy.cn,direct
+ENV GOPROXY=${GOPROXY}
+ENV GOSUMDB=sum.golang.google.cn
+
 WORKDIR /src
 
-# Cache modules first.
-COPY go.mod go.sum* ./
-RUN go mod download || true
+# Download modules in their own layer so they are cached across code changes.
+COPY go.mod go.sum ./
+RUN go mod download
 
 # Build a static, CGO-free binary.
 COPY . .

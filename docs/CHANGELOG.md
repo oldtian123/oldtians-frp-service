@@ -14,11 +14,20 @@ All notable changes to Oldtian's FRP Service are documented here.
 - Translated the README files (root / server / agent) to Chinese.
 - `.gitignore`: ignore the regenerable `go.work.sum`.
 
+### Fixed
+- Docker builds failed behind CN networks because the build pulled Go modules from
+  `proxy.golang.org` (unreachable → i/o timeout). Both `server/Dockerfile` and
+  `agent/Dockerfile` now default `GOPROXY=https://goproxy.cn,direct` (overridable
+  via `--build-arg GOPROXY=...`) and `GOSUMDB=sum.golang.google.cn`, and download
+  modules in a dedicated cached layer (`go mod download` no longer masked by
+  `|| true`).
+
 ### Notes
 - Recommended to run the agent container with `--network host` so frpc and the
   health checks can reach other LAN machines.
 - Both Docker build steps verified by cross-compiling the binaries for
-  linux/amd64 + arm64 with `CGO_ENABLED=0`.
+  linux/amd64 + arm64 with `CGO_ENABLED=0`; module fetch verified against
+  goproxy.cn with a clean cache.
 
 ## 2026-06-22
 
