@@ -1,0 +1,47 @@
+# RAW end-to-end TEST stack for Oldtian's FRP Service (public server side).
+# No domain / Nginx / SSL — everything is reached by public IP + port, so you can
+# verify the control-api + frps + agent + frpc pipeline in isolation.
+#
+#   1. cp ../server/config.example.yaml control-api.config.yaml   (then edit, see docs)
+#   2. edit frps.toml  (auth.token must equal control-api frp.auth_token)
+#   3. docker compose -f docker-compose.test.yml up -d --build
+#
+# Open these ports in the firewall / cloud security group:
+#   8088/tcp  control-api (agent connects here)
+#   7000/tcp  frps control (frpc connects here)
+#   8080/tcp  frps vhost HTTP (HTTP tunnel test via Host header)
+#   2222/tcp  the TCP tunnel remote_port used in this test
+#
+# NOTE: frps uses bridge networking with explicit port maps (not host networking)
+# to avoid clashing with 1Panel/OpenResty. The TCP tunnel you create MUST use
+# remote_port 2222 to match the published port. If 8080/2222 are taken on the
+# host, change the LEFT side of the map (e.g. "18080:8080") and adjust your test.
+name: oldtians-frp-service-test
+
+services:
+  ofs-control-api:
+    build:
+      context: ../server
+      dockerfile: Dockerfile
+    image: oldtians-frp-service/ofs-control-api:latest
+    container_name: ofs-control-api
+    restart: unless-stopped
+    ports:
+      - "8088:8088"          # PUBLIC: the agent reaches the control-api here
+    volumes:
+      - ./control-api.config.yaml:/app/config.yaml:ro
+      - control_api_data:/app/data
+
+  frps:
+    image: snowdreamtech/frps:latest
+    container_name: ofs-frps
+    restart: unless-stopped
+    ports:
+      - "7000:7000"          # frpc control connection
+      - "8080:8080"          # vhost HTTP (HTTP tunnel test)
+      - "2222:2222"          # TCP tunnel remote_port for this test
+    volumes:
+      - ./frps.toml:/etc/frp/frps.toml:ro
+
+volumes:
+  control_api_data:
