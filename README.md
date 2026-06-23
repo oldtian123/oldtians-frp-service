@@ -1,71 +1,69 @@
 # Oldtian's FRP Service
 
-A small, personal intranet-penetration (内网穿透) control system built on top of
-[frp](https://github.com/fatedier/frp). It does **not** reimplement tunneling —
-it orchestrates `frps` / `frpc` and gives you a clean API to register gateways,
-manage tunnels, publish internal services (including from AI deploy scripts), and
-report health back to a future cloud dashboard.
+一个小巧的、面向个人使用的内网穿透控制系统，基于
+[frp](https://github.com/fatedier/frp) 构建。它**不重新实现**穿透协议——而是在
+`frps` / `frpc` 之上做编排，提供一套干净的 API 来注册网关、管理隧道、发布内网服务
+（包括由 AI 部署脚本发布），并把健康状态上报给未来的云端面板。
 
-> This project ships an **API only** — there is no bundled web console. A separate
-> cloud visualization panel is expected to consume these APIs later.
+> 本项目**只提供 API**，不附带 Web 控制台。后续会有独立的云端可视化面板来对接这些 API。
 
-## Components
+## 组件
 
-| Name | Binary | Runs on | Role |
+| 名称 | 二进制 | 运行位置 | 职责 |
 | --- | --- | --- | --- |
-| Control API | `ofs-control-api` | Public server | REST API + SQLite state, tells agents what to run |
-| Gateway Agent | `ofs-gateway-agent` | Internal jump host | Registers, heartbeats, generates `frpc.toml`, manages `frpc`, local publish API |
-| frps | `frps` | Public server | frp server (the actual tunnel endpoint) |
-| frpc | `frpc` | Internal jump host | frp client (managed by the agent) |
+| 控制 API | `ofs-control-api` | 公网服务器 | REST API + SQLite 状态，告诉 Agent 该运行什么 |
+| 网关 Agent | `ofs-gateway-agent` | 内网跳板机 | 注册、心跳、生成 `frpc.toml`、管理 `frpc`、本地发布 API |
+| frps | `frps` | 公网服务器 | frp 服务端（真正的穿透端点） |
+| frpc | `frpc` | 内网跳板机 | frp 客户端（由 Agent 管理） |
 
 ```
-Browser ──HTTPS──> 1Panel OpenResty/Nginx ──> frps(vhost 8080) ──> frpc ──> 192.168.x.x:port
+浏览器 ──HTTPS──> 1Panel OpenResty/Nginx ──> frps(vhost 8080) ──> frpc ──> 192.168.x.x:port
                          │
-Agent/AI ──> ofs-control-api(8088) <── heartbeat/config/health ── ofs-gateway-agent ──manages──> frpc
+Agent/AI ──> ofs-control-api(8088) <── 心跳/配置/健康 ── ofs-gateway-agent ──管理──> frpc
 ```
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full picture.
+完整架构见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
 
-## Repository layout
+## 仓库结构
 
 ```
 oldtians-frp-service/
-├── server/   # ofs-control-api (Go, Gin, SQLite)
-├── agent/    # ofs-gateway-agent (Go, manages frpc)
-├── deploy/   # docker-compose.yml, frps.toml, nginx.example.conf
-├── docs/     # architecture, API, deployment, handoff, troubleshooting...
-└── go.work   # Go workspace tying server + agent together
+├── server/   # ofs-control-api（Go、Gin、SQLite）
+├── agent/    # ofs-gateway-agent（Go，管理 frpc）
+├── deploy/   # docker-compose.yml、frps.toml、nginx.example.conf
+├── docs/     # 架构、API、部署、交接、故障排查……
+└── go.work   # 将 server + agent 绑在一起的 Go workspace
 ```
 
-## Quick start (local dev)
+## 快速开始（本地开发）
 
-Prerequisites: Go 1.25+.
+前置要求：Go 1.25+。
 
-### 1. Run the control-api
+### 1. 运行控制 API
 
 ```bash
 cd server
-cp config.example.yaml config.yaml      # edit tokens
+cp config.example.yaml config.yaml      # 编辑 token
 go run ./cmd/control-api -config config.yaml
-# -> listening on 0.0.0.0:8088, SQLite auto-created under ./data
+# -> 监听 0.0.0.0:8088，SQLite 自动在 ./data 下创建
 ```
 
-### 2. Run the gateway-agent (on the jump host)
+### 2. 运行网关 Agent（在跳板机上）
 
 ```bash
 cd agent
-cp config.example.yaml config.yaml      # set server_url + register_token
-# place an frpc binary at the configured bin_path
+cp config.example.yaml config.yaml      # 设置 server_url + register_token
+# 把 frpc 二进制放到配置里指定的 bin_path
 go run ./cmd/gateway-agent -config config.yaml
 ```
 
-The agent auto-registers, starts heartbeating, generates `frpc.toml`, and starts
-`frpc`. Its local publish API listens on `127.0.0.1:8899`.
+Agent 会自动注册、开始心跳、生成 `frpc.toml` 并启动 `frpc`。它的本地发布 API
+监听在 `127.0.0.1:8899`。
 
-### 3. Create a tunnel
+### 3. 创建一个隧道
 
 ```bash
-# HTTP tunnel via the admin API
+# 通过管理 API 创建 HTTP 隧道
 curl -X POST http://127.0.0.1:8088/api/tunnels \
   -H "Authorization: Bearer <admin_token>" \
   -H "Content-Type: application/json" \
@@ -74,7 +72,7 @@ curl -X POST http://127.0.0.1:8088/api/tunnels \
        "domain":"openlist.tunnel.oldtian.top"}'
 ```
 
-Or let an AI deploy script publish one locally:
+或者让 AI 部署脚本在本地发布一个：
 
 ```bash
 curl -X POST http://127.0.0.1:8899/api/local/publish \
@@ -83,35 +81,34 @@ curl -X POST http://127.0.0.1:8899/api/local/publish \
        "target_port":5173,"subdomain":"ai-demo","ttl":"24h","source":"ai-deploy"}'
 ```
 
-## Production deployment
+## 生产部署
 
-The public side runs via Docker Compose behind 1Panel's Nginx/OpenResty:
+公网侧通过 Docker Compose 部署，并跑在 1Panel 的 Nginx/OpenResty 之后：
 
 ```bash
 cd deploy
-cp ../server/config.example.yaml control-api.config.yaml   # edit
-# edit frps.toml (auth.token must match control-api frp.auth_token)
+cp ../server/config.example.yaml control-api.config.yaml   # 编辑
+# 编辑 frps.toml（auth.token 必须与 control-api 的 frp.auth_token 一致）
 docker compose up -d
 ```
 
-Full walkthrough: [docs/DEPLOYMENT_1PANEL.md](docs/DEPLOYMENT_1PANEL.md).
+完整流程：[docs/DEPLOYMENT_1PANEL.md](docs/DEPLOYMENT_1PANEL.md)。
 
-## Documentation
+## 文档
 
-- [docs/HANDOFF.md](docs/HANDOFF.md) — start here if you are taking over the project
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- [docs/API.md](docs/API.md)
-- [docs/DEPLOYMENT_1PANEL.md](docs/DEPLOYMENT_1PANEL.md)
-- [docs/AGENT.md](docs/AGENT.md)
-- [docs/PANEL_INTEGRATION.md](docs/PANEL_INTEGRATION.md)
-- [docs/AI_PUBLISH.md](docs/AI_PUBLISH.md)
-- [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
-- [docs/CHANGELOG.md](docs/CHANGELOG.md)
+- [docs/HANDOFF.md](docs/HANDOFF.md) — 接手项目从这里开始
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — 架构
+- [docs/API.md](docs/API.md) — API 参考
+- [docs/DEPLOYMENT_1PANEL.md](docs/DEPLOYMENT_1PANEL.md) — 1Panel 部署
+- [docs/AGENT.md](docs/AGENT.md) — Agent 说明
+- [docs/PANEL_INTEGRATION.md](docs/PANEL_INTEGRATION.md) — 面板对接
+- [docs/AI_PUBLISH.md](docs/AI_PUBLISH.md) — AI 发布
+- [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) — 故障排查
+- [docs/CHANGELOG.md](docs/CHANGELOG.md) — 变更记录
 
-## Scope (v1)
+## 范围（v1）
 
-In scope: gateway registration, tunnels (HTTP + TCP), config versioning, AI
-publish, health reporting, panel data APIs.
+包含：网关注册、隧道（HTTP + TCP）、配置版本管理、AI 发布、健康上报、面板数据 API。
 
-Out of scope (by design): web console, multi-user/RBAC, billing, multi-tenant
-isolation, P2P/XTCP/STCP/SUDP, custom tunneling protocols.
+刻意不做（按设计）：Web 控制台、多用户 / RBAC、计费、多租户隔离、
+P2P/XTCP/STCP/SUDP、自研穿透协议。
