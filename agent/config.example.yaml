@@ -1,0 +1,28 @@
+# Oldtian's FRP Service - gateway-agent (ofs-gateway-agent) configuration example.
+# Copy to config.yaml and adjust. server_url and register_token can also be set
+# via the environment variables OFS_SERVER_URL and OFS_REGISTER_TOKEN.
+
+server_url: "https://api.tunnel.oldtian.top"   # OFS_SERVER_URL
+register_token: "change-me-register-token"     # OFS_REGISTER_TOKEN
+
+gateway:
+  # Human-friendly name; the server slugifies it into the gateway_id.
+  # If empty, the machine hostname is used.
+  name: "home-gateway"
+
+agent:
+  # Local publish API listener. Use 127.0.0.1 to restrict to this host, or
+  # 0.0.0.0 to let other LAN machines call the publish API.
+  listen_addr: "127.0.0.1"
+  listen_port: 8899
+  heartbeat_interval_seconds: 10
+  sync_interval_seconds: 10
+  health_check_interval_seconds: 15
+  # Where gateway_id / gateway_secret / config version are persisted.
+  # Defaults to <frpc.work_dir>/state.yaml when omitted.
+  state_path: "/etc/oldtians-frp-service/state.yaml"
+
+frpc:
+  bin_path: "/usr/local/bin/frpc"
+  config_path: "/etc/oldtians-frp-service/frpc.toml"
+  work_dir: "/etc/oldtians-frp-service"

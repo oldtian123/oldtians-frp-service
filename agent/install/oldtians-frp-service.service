@@ -1,0 +1,23 @@
+[Unit]
+Description=Oldtian's FRP Service - gateway agent (ofs-gateway-agent)
+Documentation=https://github.com/oldtian123/oldtians-frp-service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# The agent owns the frpc child process, so it must be able to write the frpc
+# config and start frpc. Running as root is the simplest option for a personal
+# jump host; switch to a dedicated user if you prefer.
+User=root
+WorkingDirectory=/etc/oldtians-frp-service
+ExecStart=/usr/local/bin/ofs-gateway-agent -config /etc/oldtians-frp-service/config.yaml
+Restart=always
+RestartSec=5
+# Give frpc time to stop cleanly on reload/shutdown.
+TimeoutStopSec=15
+# Hardening (relax if it interferes with your setup).
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

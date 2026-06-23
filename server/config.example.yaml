@@ -1,0 +1,35 @@
+# Oldtian's FRP Service - control-api (ofs-control-api) configuration example.
+# Copy to config.yaml and fill in real secrets. Any field below can also be
+# overridden by an environment variable (see the OFS_* names in the comments).
+
+server:
+  listen_addr: "0.0.0.0"          # OFS_LISTEN_ADDR
+  listen_port: 8088               # OFS_LISTEN_PORT
+  # Public base URL of this API, returned to agents on registration.
+  public_base_url: "https://api.tunnel.oldtian.top"  # OFS_PUBLIC_BASE_URL
+
+database:
+  # SQLite file path. The parent directory is created automatically on boot.
+  path: "./data/oldtians-frp-service.db"   # OFS_DATABASE_PATH
+
+auth:
+  # Protects the admin/management/panel API (Authorization: Bearer <admin_token>).
+  admin_token: "change-me-admin-token"      # OFS_ADMIN_TOKEN
+  # Allows a gateway-agent to self-register (sent in the register request body).
+  register_token: "change-me-register-token" # OFS_REGISTER_TOKEN
+
+frp:
+  # frps server the agents (frpc) connect to.
+  server_addr: "tunnel.oldtian.top"   # OFS_FRP_SERVER_ADDR
+  server_port: 7000                   # OFS_FRP_SERVER_PORT
+  # Token shared with frps (auth.token in frps.toml / frpc.toml).
+  auth_token: "change-me-frp-token"   # OFS_FRP_AUTH_TOKEN
+  # Wildcard suffix used to build HTTP tunnel domains: <subdomain>.<suffix>
+  http_domain_suffix: "tunnel.oldtian.top"  # OFS_FRP_HTTP_DOMAIN_SUFFIX
+  # frps vhostHTTPPort that 1Panel Nginx reverse-proxies to (informational).
+  default_http_port: 8080
+
+tunnel:
+  default_ttl_hours: 24    # default TTL applied by /api/publish when ttl is omitted
+  tcp_port_min: 22000      # inclusive lower bound for auto-allocated TCP remote ports
+  tcp_port_max: 22999      # inclusive upper bound for auto-allocated TCP remote ports

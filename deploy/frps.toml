@@ -1,0 +1,16 @@
+# frps configuration for Oldtian's FRP Service.
+# Runs on the public server. Keep auth.token identical to the control-api
+# config (frp.auth_token) and to what agents receive in their pulled config.
+
+bindPort = 7000
+vhostHTTPPort = 8080
+
+auth.method = "token"
+auth.token = "change-me-frp-token"
+
+# frps dashboard (optional). Bind to localhost only; expose via SSH tunnel or
+# a 1Panel reverse proxy if you need remote access.
+webServer.addr = "127.0.0.1"
+webServer.port = 7500
+webServer.user = "admin"
+webServer.password = "change-me"

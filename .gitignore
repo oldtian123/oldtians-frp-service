@@ -1,0 +1,30 @@
+# Binaries
+*.exe
+*.exe~
+ofs-control-api
+ofs-gateway-agent
+/server/ofs-control-api
+/agent/ofs-gateway-agent
+
+# Runtime data / generated config
+data/
+*.db
+*.db-shm
+*.db-wal
+**/config.yaml
+**/state.yaml
+**/frpc.toml
+deploy/control-api.config.yaml
+
+# Local test / scratch
+.itest/
+.smoke/
+
+# Go
+/vendor/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

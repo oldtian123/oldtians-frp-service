@@ -1,0 +1,48 @@
+# Docker Compose for Oldtian's FRP Service (public server side).
+# Compose project name is fixed so resources are grouped predictably.
+#
+#   1. cp ../server/config.example.yaml ./control-api.config.yaml   (then edit)
+#   2. edit ./frps.toml (set auth.token to match control-api frp.auth_token)
+#   3. docker compose up -d
+#
+# Ports:
+#   - ofs-control-api 8088  -> bound to 127.0.0.1, reverse-proxied by 1Panel Nginx
+#   - frps           7000  -> PUBLIC (frpc connects here); open in the firewall
+#   - frps vhost     8080  -> bound to 127.0.0.1, reverse-proxied by 1Panel Nginx
+#   - frps dashboard 7500  -> bound to 127.0.0.1 (optional)
+name: oldtians-frp-service
+
+services:
+  ofs-control-api:
+    build:
+      context: ../server
+      dockerfile: Dockerfile
+    image: oldtians-frp-service/ofs-control-api:latest
+    container_name: ofs-control-api
+    restart: unless-stopped
+    ports:
+      # Reverse-proxied by 1Panel Nginx (api.tunnel.oldtian.top -> 127.0.0.1:8088).
+      - "127.0.0.1:8088:8088"
+    volumes:
+      - ./control-api.config.yaml:/app/config.yaml:ro
+      - control_api_data:/app/data
+    # Secrets can alternatively be injected here instead of via the config file:
+    # environment:
+    #   - OFS_ADMIN_TOKEN=...
+    #   - OFS_REGISTER_TOKEN=...
+    #   - OFS_FRP_AUTH_TOKEN=...
+
+  frps:
+    # Community frps image. Pin to a specific frp version in production.
+    image: snowdreamtech/frps:latest
+    container_name: ofs-frps
+    restart: unless-stopped
+    ports:
+      - "7000:7000"                 # PUBLIC: frpc control connection
+      - "127.0.0.1:8080:8080"       # vhost HTTP, only for 1Panel Nginx
+      - "127.0.0.1:7500:7500"       # frps dashboard (optional)
+    volumes:
+      - ./frps.toml:/etc/frp/frps.toml:ro
+
+volumes:
+  control_api_data:
