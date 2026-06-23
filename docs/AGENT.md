@@ -31,6 +31,28 @@ macOS / no systemd: run it directly or under launchd:
 /usr/local/bin/ofs-gateway-agent -config /etc/oldtians-frp-service/config.yaml
 ```
 
+## Install (Docker)
+
+The agent image (`agent/Dockerfile`) **bundles frpc**, so you do not need to
+install frpc separately.
+
+```bash
+# build (override frp version/arch via --build-arg FRP_VERSION / FRP_ARCH)
+docker build -t oldtians-frp-service/ofs-gateway-agent ./agent
+
+# run with host networking so frpc + health checks can reach LAN services
+docker run -d --name ofs-gateway-agent \
+  --network host --restart unless-stopped \
+  -v /etc/oldtians-frp-service:/etc/oldtians-frp-service \
+  oldtians-frp-service/ofs-gateway-agent
+```
+
+Mount a `config.yaml` under `/etc/oldtians-frp-service` (state.yaml and frpc.toml
+are written alongside it). With `--network host`, `agent.listen_addr: 127.0.0.1`
+binds the host's localhost; set it to `0.0.0.0` to let other LAN hosts call the
+publish API. The bundled frpc lives at `/usr/local/bin/frpc`, matching the default
+`frpc.bin_path`.
+
 ## Configuration file
 
 `/etc/oldtians-frp-service/config.yaml` (see `agent/config.example.yaml`):

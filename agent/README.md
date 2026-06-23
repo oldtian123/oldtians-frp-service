@@ -24,6 +24,28 @@ journalctl -u oldtians-frp-service -f
 
 Windows：见 `install/install.ps1`。
 
+## Docker
+
+镜像里**已内置 frpc**（Agent 把 frpc 当子进程管理）：
+
+```bash
+# 构建（默认 amd64）
+docker build -t oldtians-frp-service/ofs-gateway-agent ./agent
+# 指定 frp 版本 / 架构
+docker build --build-arg FRP_VERSION=0.61.1 --build-arg FRP_ARCH=arm64 \
+  -t oldtians-frp-service/ofs-gateway-agent ./agent
+
+# 运行（建议用 host 网络，这样 frpc 和健康检查能访问内网其他机器，如 192.168.1.10:5244）
+docker run -d --name ofs-gateway-agent \
+  --network host --restart unless-stopped \
+  -v /etc/oldtians-frp-service:/etc/oldtians-frp-service \
+  oldtians-frp-service/ofs-gateway-agent
+```
+
+把 `config.yaml` 挂到 `/etc/oldtians-frp-service` 下（`state.yaml`、`frpc.toml`
+也写在这里）。要让内网其他机器访问本地发布 API，在配置里设
+`agent.listen_addr: "0.0.0.0"`。
+
 ## 配置与状态
 
 - 配置：[config.example.yaml](config.example.yaml)。`OFS_SERVER_URL` 和

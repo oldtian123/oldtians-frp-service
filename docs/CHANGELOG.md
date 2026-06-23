@@ -2,6 +2,24 @@
 
 All notable changes to Oldtian's FRP Service are documented here.
 
+## 2026-06-23
+
+### Added
+- `agent/Dockerfile` — image for the internal jump-host client; it bundles `frpc`
+  (via a download stage, `FRP_VERSION` / `FRP_ARCH` build args) so the agent has
+  the binary it manages. Plus `agent/.dockerignore`. Server image already shipped
+  at `server/Dockerfile`.
+
+### Changed
+- Translated the README files (root / server / agent) to Chinese.
+- `.gitignore`: ignore the regenerable `go.work.sum`.
+
+### Notes
+- Recommended to run the agent container with `--network host` so frpc and the
+  health checks can reach other LAN machines.
+- Both Docker build steps verified by cross-compiling the binaries for
+  linux/amd64 + arm64 with `CGO_ENABLED=0`.
+
 ## 2026-06-22
 
 ### Added

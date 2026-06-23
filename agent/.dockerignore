@@ -1,0 +1,16 @@
+# Runtime / secrets / generated files
+config.yaml
+state.yaml
+frpc.toml
+*.db
+*.db-shm
+*.db-wal
+
+# Binaries
+*.exe
+ofs-gateway-agent
+
+# Docs / local scratch
+README.md
+.itest/
+.smoke/
